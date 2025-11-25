@@ -1,0 +1,25 @@
+{
+  "name": "chainrank-webapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.513.0",
+    "next": "^15.3.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^2.15.3",
+    "swiper": "^11.2.8",
+    "three": "^0.177.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
+  }
+}
