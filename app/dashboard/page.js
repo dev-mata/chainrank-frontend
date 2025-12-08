@@ -8,6 +8,7 @@ import TrendingSlider from "../components/TrendingSlider";
 import Explore from "../components/Explore";
 import SellPromo from "../components/SellPromo";
 import RecentReviews from "../components/RecentReviews";
+import MySubscriptionsList from "../components/User/MySubscriptionsList";
 
 
 export default function Home() {
@@ -19,7 +20,8 @@ export default function Home() {
                 <FilterMenu />
 
 
-                <TrendingSlider pageTitle="My Groups in Chainrank" />
+                {/* <TrendingSlider pageTitle="My Groups in Chainrank" /> */}
+                <MySubscriptionsList />
 
 
                 <ChainRankChart pageTitle="Trending" />

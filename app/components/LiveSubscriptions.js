@@ -13,20 +13,20 @@ import sub7 from "../../public/sub7.png"
 const subscriptions = [
     {
         name: 'Tesla',
-        avatar:  sub5 ,
+        avatar: sub5,
         amount: '$25.00',
         time: '3 minutes ago',
     },
     {
         name: 'Oasis Alert',
-        avatar:  sub2 ,
+        avatar: sub2,
         amount: '$125.00',
         time: '2 minutes ago',
     },
     {
         name: 'Crypto Community',
         avatar: '/qtf.jpg',
-        avatar:  sub7 ,
+        avatar: sub7,
         amount: '$12.00',
         time: 'A few moments ago',
     },

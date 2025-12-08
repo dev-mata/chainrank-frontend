@@ -4,20 +4,42 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Wallet, Copy, CheckCircle } from "lucide-react";
 
-export default function JoinGroupModal({ showModal, setShowModal }) {
+export default function JoinGroupModal({
+    showModal,
+    setShowModal,
+    group,
+    paymentMethodId, // <-- pass this in from user data later
+}) {
     // Start on QR / Address tab by default
-    const [activeTab, setActiveTab] = useState("manual");
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
     const [formData, setFormData] = useState({
-        name: "",
         email: "",
         country: "",
         address1: "",
         address2: "",
         txnId: "",
+        cardName: "",
+        cardNumber: "",
+        cardExpiry: "",
+        cardCvc: "",
     });
     const [agree, setAgree] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [copiedField, setCopiedField] = useState(null);
+
+    const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState("");
+
+    const paymentSettings = group?.paymentSettings || {};
+    const manual = paymentSettings?.manualPaymentInstructions || {};
+
+    const manualAvailable =
+        paymentSettings?.allowManualPayments && !!manual.walletAddress;
+
+    const [activeTab, setActiveTab] = useState(
+        manualAvailable ? "manual" : "wallet"
+    );
 
     const dummyData = {
         groupName: "Trial Group",
@@ -36,29 +58,87 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!isFormValid()) return;
-        setIsSubmitted(true);
+        setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const isFormValid = () => {
         const baseComplete =
-            formData.name.trim() &&
             formData.email.trim() &&
             formData.country.trim() &&
             formData.address1.trim();
 
         const manualTab = activeTab === "manual";
+        const cardTab = activeTab === "wallet";
+
         const manualComplete = !manualTab || formData.txnId.trim();
 
-        return baseComplete && manualComplete && agree;
+        const cardComplete =
+            !cardTab ||
+            (formData.cardName.trim() &&
+                formData.cardNumber.trim() &&
+                formData.cardExpiry.trim() &&
+                formData.cardCvc.trim());
+
+        return baseComplete && manualComplete && cardComplete && agree;
     };
 
     const formValid = isFormValid();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setApiError("");
+
+        const authToken = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+        const stripeCustomerId =
+            typeof window !== "undefined"
+                ? localStorage.getItem("authstripeCustomerId")
+                : null;
+
+        if (!formValid || !group?._id) return;
+
+        // Decide which payment method is being used
+        const paymentMethod =
+            activeTab === "wallet" ? "card" : manualAvailable ? "manual" : "card";
+
+        // BASE payload (what you specified)
+        const payload = {
+            groupId: group._id,
+            paymentMethod,
+            paymentMethodId: paymentMethod === "card" ? stripeCustomerId : null,
+            txnId: paymentMethod === "manual" ? formData.txnId : undefined,
+        };
+
+        // Optional: send extra info for manual payments / metadata
+        if (paymentMethod === "manual") {
+            payload.txnId = formData.txnId;
+        }
+
+        setLoading(true);
+        try {
+            const res = await fetch(`${baseUrl}/api/subscriptions/join`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                setApiError(err?.message || "Failed to create subscription.");
+                return;
+            }
+
+            // success
+            setIsSubmitted(true);
+        } catch (error) {
+            console.error(error);
+            setApiError("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <AnimatePresence>
@@ -87,27 +167,68 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
                         {!isSubmitted ? (
                             <>
                                 {/* Header */}
-                                <div className="mb-4 text-center">
-                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                        Join {dummyData.groupName}
-                                    </h2>
-                                    <p className="mt-1 text-xs md:text-sm text-gray-600 font-rhm">
-                                        Fill in your details and complete the payment to start.
-                                    </p>
+                                <div className="mb-4  border border-gray-200 bg-gray-50 px-3 py-3 md:px-4 md:py-3 font-rhm ">
+                                    {/* Top row: logo + name + rating */}
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            {/* Logo */}
+                                            <div className="flex h-10 w-10 items-center justify-center  bg-gray-200 text-xs font-semibold text-white md:h-11 md:w-11">
+                                                <img
+                                                    src={`${baseUrl}${group.logoUrl}`}
+                                                    alt={group.name}
+                                                    className="h-8 w-8 md:h-9 md:w-9"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <h2 className="text-sm md:text-base font-semibold text-gray-900">
+                                                    {group.groupName} – Premium access
+                                                </h2>
+                                                <div className="mt-0.5 flex items-center gap-1 text-[11px] md:text-xs text-gray-600">
+                                                    <span className="flex text-amber-400 text-[12px]">
+                                                        ★★★★★
+                                                    </span>
+                                                    <span className="text-gray-500">(12)</span>
+                                                    <span className="mx-1 text-gray-400">•</span>
+                                                    <span>{group.category}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Right side: trial / price info */}
+                                        <div className="text-right text-[11px] md:text-xs">
+                                            <p className="font-semibold text-gray-900">
+                                                2 day free trial
+                                            </p>
+                                            <p className="text-gray-500">${group.price}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom row: card networks + extra info */}
+                                    <div className="mt-3 flex items-center justify-between gap-3 text-[11px] md:text-xs text-gray-600">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1">
+                                                <img src="/cards/visa.png" className="h-4" alt="Visa" />
+                                                <img
+                                                    src="/cards/mastercard.png"
+                                                    className="h-4"
+                                                    alt="Mastercard"
+                                                />
+                                                <img src="/cards/keme.png" className="h-4" alt="Amex" />
+                                            </div>
+                                            <span>Cards accepted</span>
+                                        </div>
+
+                                        <span className="text-gray-500">
+                                            Secure checkout • Cancel anytime
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* Form */}
                                 <form onSubmit={handleSubmit} className="space-y-3">
                                     {/* User Info */}
                                     <div className="space-y-2">
-                                        <input
-                                            name="name"
-                                            onChange={handleChange}
-                                            value={formData.name}
-                                            placeholder="Full Name"
-                                            className="w-full p-2 text-sm border border-gray-300 bg-gray-50 font-rhm focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-300"
-                                            required
-                                        />
                                         <input
                                             name="email"
                                             onChange={handleChange}
@@ -144,6 +265,7 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
 
                                     {/* Payment Tabs */}
                                     <div className="mt-4 border-b border-gray-200 flex text-xs md:text-sm font-medium">
+                                        {/* Card tab – always visible */}
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab("wallet")}
@@ -153,48 +275,80 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
                                                 }`}
                                         >
                                             <Wallet className="w-4 h-4" />
-                                            Connect Wallet
+                                            Via Credit Card
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab("manual")}
-                                            className={`flex-1 py-2 flex items-center justify-center gap-1 font-rhm transition-all ${activeTab === "manual"
-                                                ? "text-black border-b-2 border-rose-400"
-                                                : "text-gray-500 hover:text-black"
-                                                }`}
-                                        >
-                                            <span>📷</span> Pay via QR / Address
-                                        </button>
+
+                                        {/* QR / Address tab – ONLY if manualAvailable */}
+                                        {manualAvailable && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab("manual")}
+                                                className={`flex-1 py-2 flex items-center justify-center gap-1 font-rhm transition-all ${activeTab === "manual"
+                                                    ? "text-black border-b-2 border-rose-400"
+                                                    : "text-gray-500 hover:text-black"
+                                                    }`}
+                                            >
+                                                <span>📷</span> Pay via QR / Address
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {/* Wallet Tab */}
+                                    {/* Credit Card Tab */}
                                     {activeTab === "wallet" && (
-                                        <div className="mt-3 p-3 border border-gray-200 bg-gray-50 font-rhm text-xs md:text-sm">
+                                        <div className="mt-3 p-3 border border-gray-200 bg-gray-50 font-rhm text-xs md:text-sm space-y-2">
                                             <p className="mb-1">
                                                 <span className="font-semibold">Amount:</span>{" "}
-                                                {dummyData.amount}
+                                                {group.price} $USD
                                             </p>
-                                            <p className="mb-2">
-                                                <span className="font-semibold">Network:</span>{" "}
-                                                {dummyData.network}
+                                            <p className="mb-3 text-gray-700">
+                                                Pay securely with your credit or debit card.
                                             </p>
-                                            <button
-                                                type="button"
-                                                className="w-full mt-1 py-2 text-xs md:text-sm bg-rose-300 text-black font-semibold border shadow-[3px_3px_0px_rgba(0,0,0,1)]"
-                                            >
-                                                Connect Wallet
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="w-full mt-2 py-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm hover:bg-gray-50"
-                                            >
-                                                Simulate Payment
-                                            </button>
+
+                                            <input
+                                                name="cardName"
+                                                onChange={handleChange}
+                                                value={formData.cardName}
+                                                placeholder="Name on Card"
+                                                className="w-full p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
+                                                required={activeTab === "wallet"}
+                                            />
+                                            <input
+                                                name="cardNumber"
+                                                onChange={handleChange}
+                                                value={formData.cardNumber}
+                                                placeholder="Card Number"
+                                                inputMode="numeric"
+                                                className="w-full p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
+                                                required={activeTab === "wallet"}
+                                            />
+                                            <div className="flex gap-2">
+                                                <input
+                                                    name="cardExpiry"
+                                                    onChange={handleChange}
+                                                    value={formData.cardExpiry}
+                                                    placeholder="MM/YY"
+                                                    className="w-1/2 p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
+                                                    required={activeTab === "wallet"}
+                                                />
+                                                <input
+                                                    name="cardCvc"
+                                                    onChange={handleChange}
+                                                    value={formData.cardCvc}
+                                                    placeholder="CVC"
+                                                    inputMode="numeric"
+                                                    className="w-1/2 p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
+                                                    required={activeTab === "wallet"}
+                                                />
+                                            </div>
+
+                                            <p className="mt-1 text-[10px] text-gray-500">
+                                                This is a demo UI only. No real charges will be made.
+                                            </p>
                                         </div>
                                     )}
 
                                     {/* Manual / QR Tab */}
-                                    {activeTab === "manual" && (
+                                    {activeTab === "manual" && manualAvailable && (
                                         <div className="mt-3 p-3 border border-gray-200 bg-gray-50 font-rhm space-y-3 text-xs md:text-sm">
                                             {/* Amount + Network */}
                                             <p className="text-gray-800">
@@ -204,7 +358,7 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
 
                                             {/* Dummy QR Code */}
                                             <div className="flex flex-col items-center gap-2">
-                                                <div className="bg-rose-100 text-rose-800 text-[10px] px-3 py-1 rounded-full shadow-sm">
+                                                <div className="bg-rose-100 text-rose-800 text-[10px] px-3 py-1 font-rhm ">
                                                     Scan to pay
                                                 </div>
                                                 <div className="w-28 h-28 bg-white border-[3px] border-gray-900 grid grid-cols-4 grid-rows-4 gap-[2px] p-1 shadow-[4px_4px_0px_rgba(0,0,0,1)]">
@@ -250,7 +404,9 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
 
                                             {/* Payment Reference */}
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-gray-800">Payment Reference:</span>
+                                                <span className="text-gray-800">
+                                                    Payment Reference:
+                                                </span>
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -304,16 +460,23 @@ export default function JoinGroupModal({ showModal, setShowModal }) {
                                         </p>
                                     </div>
 
+                                    {/* Error message */}
+                                    {apiError && (
+                                        <p className="text-xs text-red-500 font-rhm mt-1">
+                                            {apiError}
+                                        </p>
+                                    )}
+
                                     {/* Submit */}
                                     <button
                                         type="submit"
-                                        disabled={!formValid}
-                                        className={`w-full mt-4 py-2 text-xs md:text-sm font-semibold font-rhm border ${formValid
+                                        disabled={!formValid || loading}
+                                        className={`w-full mt-4 py-2 text-xs md:text-sm font-semibold font-rhm border ${formValid && !loading
                                             ? "bg-rose-300 text-black shadow-[4px_4px_0px_rgba(0,0,0,1)]"
                                             : "bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed"
                                             }`}
                                     >
-                                        Submit
+                                        {loading ? "Processing..." : "Submit"}
                                     </button>
                                 </form>
                             </>

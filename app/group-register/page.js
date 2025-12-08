@@ -1,10 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
-import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+import StepIndicator from './StepIndicator';
+import GroupInfoStep from './GroupInfoStep';
+import PasswordStep from './PasswordStep';
+import ImageUploadStep from './ImageUploadStep';
 
 export default function RegisterGroupPage() {
     const router = useRouter();
@@ -19,6 +23,7 @@ export default function RegisterGroupPage() {
         description: '',
         price: '',
         category: '',
+        subCategory: '',
         telegramLink: '',
         discordLink: '',
         password: '',
@@ -32,27 +37,12 @@ export default function RegisterGroupPage() {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Password requirements state
     const [passwordRequirements, setPasswordRequirements] = useState({
         minLength: false,
         hasUpperCase: false,
         hasSymbol: false,
         hasNumber: false,
     });
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({ ...prev, [name]: value }));
-
-        // Real-time password validation
-        if (name === 'password') {
-            checkPasswordRequirements(value);
-        }
-
-        if (errors[name]) {
-            setErrors((prev) => ({ ...prev, [name]: '' }));
-        }
-    };
 
     const checkPasswordRequirements = (password) => {
         setPasswordRequirements({
@@ -63,8 +53,22 @@ export default function RegisterGroupPage() {
         });
     };
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setForm((prev) => ({ ...prev, [name]: value }));
+
+        if (name === 'password') {
+            checkPasswordRequirements(value);
+        }
+
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: '' }));
+        }
+    };
+
     const isPasswordStrong = () => {
-        return Object.values(passwordRequirements).every(req => req === true);
+        return Object.values(passwordRequirements).every((req) => req === true);
     };
 
     const validateImage = (file) => {
@@ -121,6 +125,8 @@ export default function RegisterGroupPage() {
             if (!form.description.trim()) newErrors.description = 'Description is required';
             if (!form.price || form.price <= 0) newErrors.price = 'Valid price is required';
             if (!form.category) newErrors.category = 'Category is required';
+            if (!form.subCategory) newErrors.subCategory = 'Sub Category is required';
+
         }
 
         if (step === 2) {
@@ -166,6 +172,7 @@ export default function RegisterGroupPage() {
             formData.append('description', form.description);
             formData.append('price', form.price);
             formData.append('category', form.category);
+            formData.append('subCategory', form.subCategory);
             formData.append('telegramLink', form.telegramLink);
             formData.append('discordLink', form.discordLink);
             formData.append('password', form.password);
@@ -195,7 +202,7 @@ export default function RegisterGroupPage() {
             }
 
             alert('Group registered successfully!');
-            router.push('/connect-payments');
+            router.push('/group-login');
         } catch (error) {
             console.error('Registration error:', error);
             setErrors({ general: 'Network error. Please try again.' });
@@ -209,42 +216,16 @@ export default function RegisterGroupPage() {
             <Header />
 
             {/* Header Section */}
-            <div className='px-4 py-6 lg:p-10 max-w-2xl mx-auto bg-white'>
+            <div className="px-4 py-6 lg:p-10 max-w-2xl mx-auto bg-white">
                 <h1 className="text-2xl font-bold text-black">Register Your Group</h1>
-                <p className='text-black font-rhm'>Register your group now and start boosting your community!</p>
+                <p className="text-black font-rhm">
+                    Register your group now and start boosting your community!
+                </p>
             </div>
 
             {/* Progress Steps */}
             <div className="max-w-2xl mx-auto px-4 mb-8">
-                <div className="flex items-center justify-between">
-                    {[1, 2, 3].map((step) => (
-                        <div key={step} className="flex items-center flex-1">
-                            <div className="flex flex-col items-center relative flex-1">
-                                <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${currentStep > step
-                                        ? 'bg-green-500 text-white'
-                                        : currentStep === step
-                                            ? 'bg-rose-500 text-white'
-                                            : 'bg-gray-200 text-gray-500'
-                                        }`}
-                                >
-                                    {currentStep > step ? <Check className="w-5 h-5" /> : step}
-                                </div>
-                                <span className={`mt-2 text-xs font-rhm ${currentStep >= step ? 'text-black' : 'text-gray-400'}`}>
-                                    {step === 1 && 'Group Info'}
-                                    {step === 2 && 'Password'}
-                                    {step === 3 && 'Images'}
-                                </span>
-                            </div>
-                            {step < totalSteps && (
-                                <div
-                                    className={`flex-1 h-1 mx-2 transition-all ${currentStep > step ? 'bg-green-500' : 'bg-gray-200'
-                                        }`}
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
+                <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
             </div>
 
             {/* Form Container */}
@@ -255,347 +236,27 @@ export default function RegisterGroupPage() {
                     </div>
                 )}
 
-                {/* Step 1: Group Information */}
                 {currentStep === 1 && (
-                    <div className="space-y-5">
-                        <h2 className="text-xl font-bold text-black mb-4">Group Information</h2>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Group Name *</label>
-                            <input
-                                name="groupName"
-                                value={form.groupName}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.groupName ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="text"
-                                placeholder="e.g. Astro Trading"
-                            />
-                            {errors.groupName && <p className="mt-1 text-sm text-red-600">{errors.groupName}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Official Email *</label>
-                            <input
-                                name="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.email ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="email"
-                                placeholder="group@domain.com"
-                            />
-                            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Mobile Number *</label>
-                            <input
-                                name="mobileNumber"
-                                value={form.mobileNumber}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.mobileNumber ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="tel"
-                                placeholder="+1 234 567 8900"
-                            />
-                            {errors.mobileNumber && <p className="mt-1 text-sm text-red-600">{errors.mobileNumber}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Country *</label>
-                            <input
-                                name="country"
-                                value={form.country}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.country ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="text"
-                                placeholder="e.g. United States"
-                            />
-                            {errors.country && <p className="mt-1 text-sm text-red-600">{errors.country}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Description *</label>
-                            <textarea
-                                name="description"
-                                value={form.description}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.description ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                rows={3}
-                                placeholder="Describe your group..."
-                            ></textarea>
-                            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Price (monthly) in USD$ *</label>
-                            <input
-                                name="price"
-                                value={form.price}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.price ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="10.00"
-                            />
-                            {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Category *</label>
-                            <select
-                                name="category"
-                                value={form.category}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border px-2 py-3 text-black font-rhm text-sm ${errors.category ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                            >
-                                <option value="">Select category</option>
-                                <option value="Crypto">Crypto</option>
-                                <option value="Stocks">Stocks</option>
-                                <option value="Real Estate">Real Estate</option>
-                                <option value="Sports Betting">Sports Betting</option>
-                                <option value="Amazon FBA">Amazon FBA</option>
-                            </select>
-                            {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Telegram Link</label>
-                            <input
-                                name="telegramLink"
-                                value={form.telegramLink}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 p-2 text-black placeholder-gray-400"
-                                type="url"
-                                placeholder="https://t.me/yourgroup"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Discord Link</label>
-                            <input
-                                name="discordLink"
-                                value={form.discordLink}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 p-2 text-black placeholder-gray-400"
-                                type="url"
-                                placeholder="https://discord.gg/yourgroup"
-                            />
-                        </div>
-                    </div>
+                    <GroupInfoStep form={form} errors={errors} onChange={handleChange} />
                 )}
 
-                {/* Step 2: Password Setup */}
                 {currentStep === 2 && (
-                    <div className="space-y-5">
-                        <h2 className="text-xl font-bold text-black mb-4">Set Your Password</h2>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Password *</label>
-                            <input
-                                name="password"
-                                value={form.password}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.password ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="password"
-                                placeholder="Enter a strong password"
-                            />
-                            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm">Confirm Password *</label>
-                            <input
-                                name="confirmPassword"
-                                value={form.confirmPassword}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full border p-2 text-black placeholder-gray-400 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                                type="password"
-                                placeholder="Re-enter your password"
-                            />
-                            {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
-                        </div>
-
-                        {/* Password Requirements Checklist */}
-                        <div className="bg-gray-50 border border-gray-200 p-4 rounded">
-                            <p className="text-sm font-semibold text-gray-800 mb-3">Password Requirements:</p>
-                            <ul className="space-y-2">
-                                <li className="flex items-center gap-2 text-sm">
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${passwordRequirements.minLength ? 'bg-green-500' : 'bg-gray-300'
-                                        }`}>
-                                        {passwordRequirements.minLength ? (
-                                            <Check className="w-3 h-3 text-white" />
-                                        ) : (
-                                            <X className="w-3 h-3 text-gray-500" />
-                                        )}
-                                    </div>
-                                    <span className={passwordRequirements.minLength ? 'text-green-700' : 'text-gray-600'}>
-                                        At least 6 characters long
-                                    </span>
-                                </li>
-                                <li className="flex items-center gap-2 text-sm">
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${passwordRequirements.hasUpperCase ? 'bg-green-500' : 'bg-gray-300'
-                                        }`}>
-                                        {passwordRequirements.hasUpperCase ? (
-                                            <Check className="w-3 h-3 text-white" />
-                                        ) : (
-                                            <X className="w-3 h-3 text-gray-500" />
-                                        )}
-                                    </div>
-                                    <span className={passwordRequirements.hasUpperCase ? 'text-green-700' : 'text-gray-600'}>
-                                        Include at least one capital letter
-                                    </span>
-                                </li>
-                                <li className="flex items-center gap-2 text-sm">
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${passwordRequirements.hasNumber ? 'bg-green-500' : 'bg-gray-300'
-                                        }`}>
-                                        {passwordRequirements.hasNumber ? (
-                                            <Check className="w-3 h-3 text-white" />
-                                        ) : (
-                                            <X className="w-3 h-3 text-gray-500" />
-                                        )}
-                                    </div>
-                                    <span className={passwordRequirements.hasNumber ? 'text-green-700' : 'text-gray-600'}>
-                                        Include at least one number
-                                    </span>
-                                </li>
-                                <li className="flex items-center gap-2 text-sm">
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${passwordRequirements.hasSymbol ? 'bg-green-500' : 'bg-gray-300'
-                                        }`}>
-                                        {passwordRequirements.hasSymbol ? (
-                                            <Check className="w-3 h-3 text-white" />
-                                        ) : (
-                                            <X className="w-3 h-3 text-gray-500" />
-                                        )}
-                                    </div>
-                                    <span className={passwordRequirements.hasSymbol ? 'text-green-700' : 'text-gray-600'}>
-                                        Include at least one symbol (!@#$%^&*...)
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        {/* Password Match Indicator */}
-                        {form.confirmPassword && (
-                            <div className={`p-3 rounded border ${form.password === form.confirmPassword
-                                ? 'bg-green-50 border-green-200 text-green-700'
-                                : 'bg-red-50 border-red-200 text-red-700'
-                                }`}>
-                                <div className="flex items-center gap-2">
-                                    {form.password === form.confirmPassword ? (
-                                        <>
-                                            <Check className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Passwords match!</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <X className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Passwords do not match</span>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <PasswordStep
+                        form={form}
+                        errors={errors}
+                        onChange={handleChange}
+                        passwordRequirements={passwordRequirements}
+                    />
                 )}
 
-                {/* Step 3: Upload Images */}
                 {currentStep === 3 && (
-                    <div className="space-y-5">
-                        <h2 className="text-xl font-bold text-black mb-4">Upload Images</h2>
-
-                        {/* Logo Upload */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm mb-2">Upload Logo</label>
-                            <div
-                                className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer hover:border-rose-400 transition"
-                                onClick={() => document.getElementById('logo-upload').click()}
-                            >
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v6m0 0l3-3m-3 3l-3-3m6-7h.01M6 8h.01"></path>
-                                    </svg>
-                                    <p className="text-rose-600 font-medium">Tap to upload logo</p>
-                                    <p className="text-xs text-gray-400">PNG or JPEG (max. 2MB)</p>
-                                </div>
-                            </div>
-
-                            <input
-                                id="logo-upload"
-                                type="file"
-                                accept="image/png,image/jpeg,image/jpg"
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                            />
-
-                            {errors.logo && <p className="mt-2 text-sm text-red-600">{errors.logo}</p>}
-
-                            {logoPreview && (
-                                <div className="mt-4 text-center">
-                                    <Image
-                                        src={logoPreview}
-                                        alt="Logo Preview"
-                                        width={80}
-                                        height={80}
-                                        className="mx-auto rounded-full object-cover"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Banner Upload */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 font-rhm mb-2">Upload Banner Image</label>
-                            <div
-                                className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer hover:border-rose-400 transition"
-                                onClick={() => document.getElementById('banner-upload').click()}
-                            >
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v6m0 0l3-3m-3 3l-3-3m6-7h.01M6 8h.01"></path>
-                                    </svg>
-                                    <p className="text-rose-600 font-medium">Tap to upload banner</p>
-                                    <p className="text-xs text-gray-400">PNG or JPEG (max. 2MB, recommended 1200x400px)</p>
-                                </div>
-                            </div>
-
-                            <input
-                                id="banner-upload"
-                                type="file"
-                                accept="image/png,image/jpeg,image/jpg"
-                                onChange={handleBannerUpload}
-                                className="hidden"
-                            />
-
-                            {errors.bannerImage && <p className="mt-2 text-sm text-red-600">{errors.bannerImage}</p>}
-
-                            {bannerPreview && (
-                                <div className="mt-4">
-                                    <Image
-                                        src={bannerPreview}
-                                        alt="Banner Preview"
-                                        width={600}
-                                        height={200}
-                                        className="mx-auto rounded-md object-cover w-full h-48"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="bg-gray-50 border border-gray-200 p-4 rounded">
-                            <p className="text-sm text-gray-600">
-                                <strong>Note:</strong> Images are optional but highly recommended to make your group stand out!
-                            </p>
-                        </div>
-                    </div>
+                    <ImageUploadStep
+                        errors={errors}
+                        logoPreview={logoPreview}
+                        bannerPreview={bannerPreview}
+                        onLogoUpload={handleLogoUpload}
+                        onBannerUpload={handleBannerUpload}
+                    />
                 )}
 
                 {/* Navigation Buttons */}

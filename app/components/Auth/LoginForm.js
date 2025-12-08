@@ -44,14 +44,18 @@ export default function LoginForm() {
       if (!res.ok) {
         setApiError(data.message || "Login failed");
       } else {
-        // --- Store token in localStorage ---
-        // If it's a JWT, you can decode its payload to check expiry
-        localStorage.setItem("authToken", data.token);
 
-        // Optional: store expiry if backend sends it separately
+
+        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("authstripeCustomerId", data.user.stripeCustomerId);
+        localStorage.setItem("userEmail", email);
+
         if (data.expiresAt) {
           localStorage.setItem("authTokenExpiry", data.expiresAt);
         }
+
+        router.push("/dashboard");
+
 
         router.push("/dashboard");
       }
@@ -80,9 +84,8 @@ export default function LoginForm() {
             <input
               type="email"
               id="email"
-              className={`mt-1 block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${
-                emailError ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`mt-1 block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${emailError ? "border-red-500" : "border-gray-300"
+                }`}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -131,9 +134,8 @@ export default function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full border border-1 font-rhm bg-rose-300 text-black font-semibold text-sm px-4 py-3 shadow-[5px_5px_0px_rgba(0,0,0,1)] ${
-                loading ? "opacity-60 cursor-not-allowed" : ""
-              }`}
+              className={`w-full border border-1 font-rhm bg-rose-300 text-black font-semibold text-sm px-4 py-3 shadow-[5px_5px_0px_rgba(0,0,0,1)] ${loading ? "opacity-60 cursor-not-allowed" : ""
+                }`}
             >
               {loading ? "Logging in..." : "Login"}
             </button>

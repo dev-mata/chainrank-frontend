@@ -4,8 +4,11 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Logo from "../Logo";
 import SocialSection from "../SocialSection";
+import { useRouter } from "next/navigation";
+
 
 export default function CreateAccountForm() {
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -14,6 +17,8 @@ export default function CreateAccountForm() {
     password: "",
     confirmPassword: "",
   });
+
+  const router = useRouter();
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -85,7 +90,8 @@ export default function CreateAccountForm() {
       if (!res.ok) {
         setErrors({ api: data.message || "Registration failed" });
       } else {
-        alert("Account created successfully!");
+        // ✅ On success, redirect to /login
+        router.push("/login");
       }
     } catch (error) {
       setErrors({ api: "Network error. Try again." });
@@ -112,9 +118,8 @@ export default function CreateAccountForm() {
           <input
             type="email"
             name="email"
-            className={`block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${errors.email ? "border-red-500" : "border-gray-300"
+              }`}
             value={form.email}
             onChange={handleChange}
             placeholder="joe@domain.com"
@@ -128,9 +133,8 @@ export default function CreateAccountForm() {
             <input
               type={showPassword ? "text" : "password"}
               name="password"
-              className={`block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${
-                errors.password ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${errors.password ? "border-red-500" : "border-gray-300"
+                }`}
               value={form.password}
               onChange={handleChange}
               placeholder="Password"
@@ -152,9 +156,8 @@ export default function CreateAccountForm() {
             <input
               type={showPassword ? "text" : "password"}
               name="confirmPassword"
-              className={`block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${
-                errors.confirmPassword ? "border-red-500" : "border-gray-300"
-              }`}
+              className={`block w-full px-4 py-3 rounded-md border text-black focus:outline-none ${errors.confirmPassword ? "border-red-500" : "border-gray-300"
+                }`}
               value={form.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm Password"
@@ -173,9 +176,8 @@ export default function CreateAccountForm() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full border border-1 font-rhm bg-rose-300 text-black font-semibold text-sm px-4 py-3 shadow-[5px_5px_0px_rgba(0,0,0,1)] ${
-                loading ? "opacity-60 cursor-not-allowed" : ""
-              }`}
+              className={`w-full border border-1 font-rhm bg-rose-300 text-black font-semibold text-sm px-4 py-3 shadow-[5px_5px_0px_rgba(0,0,0,1)] ${loading ? "opacity-60 cursor-not-allowed" : ""
+                }`}
             >
               {loading ? "Creating..." : "Create Account"}
             </button>

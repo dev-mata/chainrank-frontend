@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import crLogo from '../../public/logo.svg';
 import { X } from 'lucide-react';
 import SocialSection from './SocialSection';
@@ -11,6 +12,37 @@ import Logo from './Logo';
 
 export default function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const router = useRouter();
+
+  // Check localStorage for existing session
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('authToken');
+    const storedEmail = localStorage.getItem('userEmail') || '';
+
+    if (token) {
+      setIsAuthenticated(true);
+      setUserEmail(storedEmail);
+    } else {
+      setIsAuthenticated(false);
+      setUserEmail('');
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Clear auth data
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authTokenExpiry');
+    localStorage.removeItem('userEmail');
+
+    setIsAuthenticated(false);
+    setUserEmail('');
+
+    router.push('/login');
+  };
 
   return (
     <header className="w-full bg-white shadow-sm px-4 py-3 flex items-center justify-between relative">
@@ -19,24 +51,57 @@ export default function Header() {
         <Logo />
       </div>
 
-      {/* Desktop Auth Links - Right Side */}
+      {/* Desktop Auth / User - Right Side */}
       <div className="hidden md:flex items-center gap-6 ml-auto z-10">
-        <Link
-          href="/login"
-          className="text-gray-700 hover:text-black font-medium transition-colors"
-        >
-          Login
-        </Link>
-        <Link
-          href="/register"
-          className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium"
-        >
-          Register
-        </Link>
+        {isAuthenticated ? (
+          <>
+            <a href='/dashboard'>
+              <span className="text-sm text-gray-700 font-rhm">
+                {userEmail ? `Hi, ${userEmail}` : 'Hi, User'}
+              </span>
+            </a>
+            <button
+              onClick={handleLogout}
+              className="border border-1 font-rhm 
+                    bg-rose-300 text-black font-semibold text-sm px-4 py-2 
+                    shadow-[5px_5px_0px_rgba(0,0,0,1)]
+                    transition-all duration-300 transform
+                    group-hover:bg-rose-400
+                    group-hover:scale-110
+                    group-hover:shadow-[7px_7px_0px_rgba(0,0,0,1)]"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="text-gray-700 hover:text-black font-medium transition-colors font-rhm"
+            >
+              Login
+            </Link>
+            <Link
+              href="/group-login"
+              className="border border-1 font-rhm 
+                    bg-rose-300 text-black font-semibold text-sm px-4 py-2 
+                    shadow-[5px_5px_0px_rgba(0,0,0,1)]
+                    transition-all duration-300 transform
+                    group-hover:bg-rose-400
+                    group-hover:scale-110
+                    group-hover:shadow-[7px_7px_0px_rgba(0,0,0,1)]"
+            >
+              Start Selling
+            </Link>
+          </>
+        )}
       </div>
 
       {/* Hamburger - Mobile Only */}
-      <button className="md:hidden focus:outline-none ml-auto z-10" onClick={() => setShowMobileMenu(true)}>
+      <button
+        className="md:hidden focus:outline-none ml-auto z-10"
+        onClick={() => setShowMobileMenu(true)}
+      >
         <div className="space-y-1">
           <div className="w-6 h-0.5 bg-gray-800"></div>
           <div className="w-6 h-0.5 bg-gray-800"></div>
@@ -55,6 +120,7 @@ export default function Header() {
             <X className="w-6 h-6 text-gray-700" />
           </button>
         </div>
+
         <nav className="space-y-6 text-base text-gray-700">
           <a href="#" className="hover:text-black block">
             About ChainRank
@@ -75,9 +141,30 @@ export default function Header() {
             Privacy
           </a>
         </nav>
-        <div className='mt-6'>
-          <hr className='border-gray-200' />
-          <LoginRegisterButton />
+
+        <div className="mt-6">
+          <hr className="border-gray-200" />
+
+          {/* Mobile auth / user */}
+          {isAuthenticated ? (
+            <div className="mt-4 flex flex-col gap-3 font-rhm">
+              <a href='/dashboard'>
+                <span className="text-sm text-gray-700">
+                  {userEmail ? `Hi, ${userEmail}` : 'Hi, User'}
+                </span>
+              </a>
+
+              <button
+                onClick={handleLogout}
+                className="w-full border font-rhm bg-black text-white font-semibold text-sm px-4 py-3 shadow-[5px_5px_0px_rgba(0,0,0,1)]"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <LoginRegisterButton />
+          )}
+
           <SocialSection isLogoVisible={false} />
         </div>
       </div>

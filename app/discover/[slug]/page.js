@@ -29,11 +29,8 @@ export default function GroupPage() {
         about:
             'Top-tier crypto signals group sharing real-time trade alerts, PnL screenshots, and weekly performance reports.',
         features: [
-            'Access to VendorList with 200+ HQ items.',
-            '1:1 coaching and mentorship from experienced resellers.',
-            'Exclusive guides for Facebook, unbans, and receipt methods.',
-            'Ebay view bot and methods to lower product cost.',
-            'Join a community of like-minded, driven individuals.',
+            'Private  Access to Exclusive Information',
+
         ],
         reviews: [
             {
@@ -178,7 +175,7 @@ export default function GroupPage() {
                 Join Group
             </button>
 
-            <JoinGroupModal showModal={showModal} setShowModal={setShowModal} />
+            <JoinGroupModal showModal={showModal} setShowModal={setShowModal} group={group} />
         </div>
     );
     // ------------------------------------------------------------------

@@ -32,7 +32,7 @@ export default function TrendingSlider({ pageTitle, communities = [], loading = 
     <section className="py-6 max-w-7xl mx-auto px-4">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800 flex items-center">
+          <h2 className="text-3xl font-bold text-gray-800 flex items-center font-rhm">
             {pageTitle}
             <span className="ml-1 w-2 h-2 bg-green-500 rounded-full inline-block" />
           </h2>
@@ -67,7 +67,7 @@ export default function TrendingSlider({ pageTitle, communities = [], loading = 
       {/* Empty State */}
       {!loading && !error && communities.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 font-rhm">No trending groups available at the moment.</p>
+          <p className="text-gray-500 font-rhm">No groups available at the moment.</p>
         </div>
       )}
 

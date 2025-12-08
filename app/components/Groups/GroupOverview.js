@@ -21,7 +21,12 @@ import {
 import telegram from '../../../public/telegram.svg';
 import discord from '../../../public/discord.svg';
 
-export default function GroupOverview() {
+import { useRouter } from "next/navigation";
+
+export default function GroupOverview({ profile }) {
+
+    const router = useRouter();
+
     // Static data matching the Group model
     const groupData = {
         groupName: 'Astro Trading 🚀',
@@ -84,7 +89,15 @@ export default function GroupOverview() {
         return statusMap[status] || statusMap['pending'];
     };
 
-    const statusDisplay = getStatusDisplay(groupData.groupStatus);
+    const statusDisplay = getStatusDisplay(profile?.groupStatus);
+
+    const handleLogout = () => {
+        // Remove token
+        localStorage.removeItem("groupToken");
+
+        // Redirect to login page
+        router.push("/group-login");
+    };
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-3 mb-3 overflow-hidden font-rhm">
@@ -93,8 +106,8 @@ export default function GroupOverview() {
                 <div className="flex items-start justify-between">
                     <div className="flex items-start gap-5">
                         <div className="relative">
-                            <Image
-                                src={groupData.logoUrl}
+                            <img
+                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${profile?.logoUrl}`}
                                 alt="Group Logo"
                                 width={80}
                                 height={80}
@@ -105,7 +118,7 @@ export default function GroupOverview() {
                             </div>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-1">{groupData.groupName}</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-1">{profile?.groupName}</h2>
 
                             {/* Status Badge */}
                             <div className="flex items-center gap-3 mb-3">
@@ -115,7 +128,7 @@ export default function GroupOverview() {
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
                                     <Users className="w-3.5 h-3.5" />
-                                    {groupData.memberCount} members
+                                    {profile?.memberCount} members
                                 </span>
                             </div>
 
@@ -123,19 +136,21 @@ export default function GroupOverview() {
                             <div className="flex items-center gap-4 text-sm text-gray-600">
                                 <div className="flex items-center gap-1.5">
                                     <Tag className="w-4 h-4 text-gray-500" />
-                                    <span className="font-medium">{groupData.category}</span>
+                                    <span className="font-medium">{profile?.category}</span> |
+                                    <span className="font-medium">{profile?.subCategory}</span>
+
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <DollarSign className="w-4 h-4 text-green-600" />
-                                    <span className="font-semibold text-green-700">${groupData.price}/mo</span>
+                                    <span className="font-semibold text-green-700">${profile?.price}/mo</span>
                                 </div>
                             </div>
 
                             {/* Social Links */}
                             <div className="flex gap-2 mt-3">
-                                {groupData.telegramLink && (
+                                {profile?.telegramLink && (
                                     <a
-                                        href={groupData.telegramLink}
+                                        href={profile?.telegramLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-xs font-medium text-gray-700 hover:text-blue-700"
@@ -145,9 +160,9 @@ export default function GroupOverview() {
                                         <ExternalLink className="w-3 h-3" />
                                     </a>
                                 )}
-                                {groupData.discordLink && (
+                                {profile?.discordLink && (
                                     <a
-                                        href={groupData.discordLink}
+                                        href={profile?.discordLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all text-xs font-medium text-gray-700 hover:text-indigo-700"
@@ -171,7 +186,10 @@ export default function GroupOverview() {
                             <Pause className="w-4 h-4" />
                             Pause
                         </button>
-                        <button className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-100 transition-all shadow-sm">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-100 transition-all shadow-sm"
+                        >
                             <LogOut className="w-4 h-4" />
                             Logout
                         </button>
@@ -187,7 +205,7 @@ export default function GroupOverview() {
                         <div className="w-1 h-4 bg-blue-500 rounded"></div>
                         About This Group
                     </h3>
-                    <p className="text-sm text-gray-700 leading-relaxed">{groupData.description}</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">{profile?.description}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -204,21 +222,21 @@ export default function GroupOverview() {
                                 <Mail className="w-4 h-4 text-gray-500 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-xs text-gray-500 mb-0.5">Email Address</p>
-                                    <p className="text-sm text-gray-900 font-medium">{groupData.email}</p>
+                                    <p className="text-sm text-gray-900 font-medium">{profile?.email}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                 <Phone className="w-4 h-4 text-gray-500 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-xs text-gray-500 mb-0.5">Mobile Number</p>
-                                    <p className="text-sm text-gray-900 font-medium">{groupData.mobileNumber}</p>
+                                    <p className="text-sm text-gray-900 font-medium">{profile?.mobileNumber}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                 <Globe className="w-4 h-4 text-gray-500 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-xs text-gray-500 mb-0.5">Country</p>
-                                    <p className="text-sm text-gray-900 font-medium">{groupData.country}</p>
+                                    <p className="text-sm text-gray-900 font-medium">{profile?.country}</p>
                                 </div>
                             </div>
                         </div>
@@ -237,21 +255,21 @@ export default function GroupOverview() {
                                 <Tag className="w-4 h-4 text-gray-500 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-xs text-gray-500 mb-0.5">Category</p>
-                                    <p className="text-sm text-gray-900 font-medium">{groupData.category}</p>
+                                    <p className="text-sm text-gray-900 font-medium">{profile?.category}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                 <DollarSign className="w-4 h-4 text-gray-500 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-xs text-gray-500 mb-0.5">Subscription Price</p>
-                                    <p className="text-sm text-gray-900 font-medium">${groupData.price}/month</p>
+                                    <p className="text-sm text-gray-900 font-medium">${profile?.price}/month</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                 <Users className="w-4 h-4 text-gray-500 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="text-xs text-gray-500 mb-0.5">Total Members</p>
-                                    <p className="text-sm text-gray-900 font-medium">{groupData.memberCount} active members</p>
+                                    <p className="text-sm text-gray-900 font-medium">{profile?.memberCount} active members</p>
                                 </div>
                             </div>
                         </div>
@@ -263,7 +281,7 @@ export default function GroupOverview() {
                     <div className="flex items-center gap-6 text-xs text-gray-500">
                         <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <span><span className="font-medium text-gray-700">Created:</span> {new Date(groupData.createdAt).toLocaleDateString('en-US', {
+                            <span><span className="font-medium text-gray-700">Created:</span> {new Date(profile?.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric'
@@ -271,7 +289,7 @@ export default function GroupOverview() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
-                            <span><span className="font-medium text-gray-700">Last Updated:</span> {new Date(groupData.updatedAt).toLocaleDateString('en-US', {
+                            <span><span className="font-medium text-gray-700">Last Updated:</span> {new Date(profile?.updatedAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric'
@@ -282,14 +300,14 @@ export default function GroupOverview() {
             </div>
 
             {/* Status Note (if exists) */}
-            {groupData.statusNote && (
+            {profile?.statusNote && (
                 <div className="px-6 pb-6">
                     <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4 shadow-sm">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                             <div>
                                 <p className="text-xs font-bold text-blue-900 mb-1">Admin Note</p>
-                                <p className="text-sm text-blue-800">{groupData.statusNote}</p>
+                                <p className="text-sm text-blue-800">{profile?.statusNote}</p>
                             </div>
                         </div>
                     </div>
