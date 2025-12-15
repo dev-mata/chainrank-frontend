@@ -37,7 +37,6 @@ const relatedSearches = [
 
 export default function RelatedSearches() {
     const handleSearchClick = (search) => {
-        // Later you can call onSearch(search.label) or router push, etc.
         console.log('Clicked search:', search);
     };
 

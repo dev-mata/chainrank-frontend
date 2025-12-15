@@ -90,7 +90,6 @@ export default function CreateAccountForm() {
       if (!res.ok) {
         setErrors({ api: data.message || "Registration failed" });
       } else {
-        // ✅ On success, redirect to /login
         router.push("/login");
       }
     } catch (error) {

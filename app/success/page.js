@@ -1,12 +1,12 @@
 'use client';
 import Image from 'next/image';
-import sampleImage from '../../public/sub5.png'; // Replace with your own image path
+import sampleImage from '../../public/sub5.png';
 
 export default function SuccessPage() {
     return (
         <div className="h-screen bg-[#e5004d] flex flex-col items-center justify-center text-white px-4 text-center">
             <Image
-                src={sampleImage} // Replace with your own image path
+                src={sampleImage} 
                 alt="Success Avatar"
                 width={80}
                 height={80}

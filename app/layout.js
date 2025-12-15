@@ -8,7 +8,7 @@ const geistSans = Geist({
 
 const redHatMono = Red_Hat_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '700'], // adjust as needed
+  weight: ['400', '500', '700'], 
   variable: '--font-redhatmono',
   display: 'swap',
 });

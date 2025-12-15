@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Star, Flame, Trophy, StarIcon } from 'lucide-react';
 import Image from 'next/image';
-import astroAvatar from '../../public/sub2.png'; // your actual image
-import owToolsAvatar from '../../public/sub3.png'; // your actual image
+import astroAvatar from '../../public/sub2.png'; 
+import owToolsAvatar from '../../public/sub3.png'; 
 
 const tabList = [
   { key: 'top', label: 'Top Charts', icon: Trophy },
@@ -12,7 +12,6 @@ const tabList = [
   { key: 'rated', label: 'Top Rated', icon: StarIcon },
 ];
 
-// Dummy data
 const chartData = {
   top: [
     {

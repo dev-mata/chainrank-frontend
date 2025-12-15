@@ -4,7 +4,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import Image from 'next/image';
 import { Star } from 'lucide-react';
-import avatar from '../../public/sub1.png'; // Replace with actual avatar
+import avatar from '../../public/sub1.png'; 
 
 const reviews = [
     {
@@ -23,7 +23,6 @@ const reviews = [
         community: 'The Hive',
         communityAvatar: avatar,
     },
-    // Add more reviews...
 ];
 
 export default function RecentReviews() {

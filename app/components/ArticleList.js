@@ -2,7 +2,7 @@
 
 import ArticleCard from './ArticleCard';
 import article1 from '../../public/trendinggroup.png';
-import article2 from '../../public/trialgroup.png'; // Replace with actual image paths
+import article2 from '../../public/trialgroup.png'; 
 
 const articles = [
     {
@@ -17,7 +17,6 @@ const articles = [
         date: '5 May 2023',
         image: article2,
     },
-    // Add more articles here...
 ];
 
 export default function ArticleList() {

@@ -27,7 +27,6 @@ export default function GroupOverview({ profile }) {
 
     const router = useRouter();
 
-    // Static data matching the Group model
     const groupData = {
         groupName: 'Astro Trading 🚀',
         email: 'contact@astrotrading.com',

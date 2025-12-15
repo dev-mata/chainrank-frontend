@@ -16,7 +16,6 @@ export default function Header() {
   const [userEmail, setUserEmail] = useState('');
   const router = useRouter();
 
-  // Check localStorage for existing session
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -33,7 +32,6 @@ export default function Header() {
   }, []);
 
   const handleLogout = () => {
-    // Clear auth data
     localStorage.removeItem('authToken');
     localStorage.removeItem('authTokenExpiry');
     localStorage.removeItem('userEmail');
@@ -46,12 +44,10 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white shadow-sm px-4 py-3 flex items-center justify-between relative">
-      {/* Logo + Brand - Centered */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
         <Logo />
       </div>
 
-      {/* Desktop Auth / User - Right Side */}
       <div className="hidden md:flex items-center gap-6 ml-auto z-10">
         {isAuthenticated ? (
           <>

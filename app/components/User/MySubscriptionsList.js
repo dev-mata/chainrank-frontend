@@ -40,7 +40,6 @@ export default function MySubscriptionsList() {
 
                 const data = await res.json();
 
-                // Adjust this depending on your actual response shape
                 const subs = data.data || data.subscriptions || [];
                 setSubscriptions(subs);
             } catch (err) {

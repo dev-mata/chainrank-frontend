@@ -32,7 +32,8 @@ export default function GroupCard({ group, variant }) {
             id: group._id || '',
             name: group.groupName || group.title || '',
             description: group.description || '',
-            // handle array/string for features
+
+
             features: Array.isArray(group.features)
                 ? group.features.join(',')
                 : (group.features || ''),

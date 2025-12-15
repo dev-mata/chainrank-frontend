@@ -5,7 +5,7 @@ export default function SubscriptionSuccess() {
     return (
         <div className="h-screen bg-[#e5004d] flex flex-col items-center justify-center text-white px-4 text-center">
             <Image
-                src="/icons/success-avatar.png" // Replace with your own image path
+                src="/icons/success-avatar.png"
                 alt="Success Avatar"
                 width={80}
                 height={80}

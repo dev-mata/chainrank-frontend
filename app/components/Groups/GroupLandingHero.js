@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import dashboardImage from '../../../public/grp-dash.jpg'; // Replace with your actual image
+import dashboardImage from '../../../public/grp-dash.jpg'; 
 
 export default function GroupLandingHero() {
     return (

@@ -2,6 +2,30 @@
 
 import { useEffect, useState } from "react";
 
+
+
+function Toggle({ checked, onChange, label }) {
+    return (
+        <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            className="inline-flex items-center gap-2 text-xs"
+        >
+            <span className="text-gray-600">{label}</span>
+            <span
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? "bg-rose-500" : "bg-gray-300"
+                    }`}
+            >
+                <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${checked ? "translate-x-4" : "translate-x-1"
+                        }`}
+                />
+            </span>
+        </button>
+    );
+}
+
+
 export default function SubscriptionPaymentSettings({ profile }) {
     const [subscriptionConfig, setSubscriptionConfig] = useState({
         subscriptionType: "monthly",
@@ -19,6 +43,7 @@ export default function SubscriptionPaymentSettings({ profile }) {
             instructions: "",
         },
     });
+
 
     const [saving, setSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
@@ -184,37 +209,19 @@ export default function SubscriptionPaymentSettings({ profile }) {
 
                         <div className="flex items-center justify-between">
                             <span className="text-gray-600">Auto renew</span>
-                            <label className="inline-flex items-center gap-2 text-xs">
-                                <input
-                                    type="checkbox"
-                                    checked={subscriptionConfig.autoRenew}
-                                    onChange={(e) =>
-                                        handleSubscriptionChange("autoRenew", e.target.checked)
-                                    }
-                                    className="h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
-                                />
-                                <span>{subscriptionConfig.autoRenew ? "Enabled" : "Disabled"}</span>
-                            </label>
+                            <Toggle
+                                checked={subscriptionConfig.autoRenew}
+                                onChange={(val) => handleSubscriptionChange("autoRenew", val)}
+                                label={subscriptionConfig.autoRenew ? "Enabled" : "Disabled"}
+                            />
                         </div>
-
                         <div className="flex items-center justify-between">
                             <span className="text-gray-600">Trial period</span>
-                            <label className="inline-flex items-center gap-2 text-xs">
-                                <input
-                                    type="checkbox"
-                                    checked={subscriptionConfig.hasTrialPeriod}
-                                    onChange={(e) =>
-                                        handleSubscriptionChange(
-                                            "hasTrialPeriod",
-                                            e.target.checked
-                                        )
-                                    }
-                                    className="h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
-                                />
-                                <span>
-                                    {subscriptionConfig.hasTrialPeriod ? "Enabled" : "Disabled"}
-                                </span>
-                            </label>
+                            <Toggle
+                                checked={subscriptionConfig.hasTrialPeriod}
+                                onChange={(val) => handleSubscriptionChange("hasTrialPeriod", val)}
+                                label={subscriptionConfig.hasTrialPeriod ? "Enabled" : "Disabled"}
+                            />
                         </div>
 
                         {subscriptionConfig.hasTrialPeriod && (
@@ -245,22 +252,13 @@ export default function SubscriptionPaymentSettings({ profile }) {
                         <h3 className="text-sm font-semibold text-gray-800">
                             Manual Payments
                         </h3>
-                        <label className="inline-flex items-center gap-2 text-xs">
-                            <input
-                                type="checkbox"
-                                checked={paymentSettings.allowManualPayments}
-                                onChange={(e) =>
-                                    handlePaymentSettingsChange(
-                                        "allowManualPayments",
-                                        e.target.checked
-                                    )
-                                }
-                                className="h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
-                            />
-                            <span>
-                                {paymentSettings.allowManualPayments ? "Enabled" : "Disabled"}
-                            </span>
-                        </label>
+                        <Toggle
+                            checked={paymentSettings.allowManualPayments}
+                            onChange={(val) =>
+                                handlePaymentSettingsChange("allowManualPayments", val)
+                            }
+                            label={paymentSettings.allowManualPayments ? "Enabled" : "Disabled"}
+                        />
                     </div>
 
                     {paymentSettings.allowManualPayments && (

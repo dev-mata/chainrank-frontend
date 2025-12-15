@@ -1,14 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import logo from '../../public/logo-white.svg'; // Replace with your logo path
+import logo from '../../public/logo-white.svg'; 
 import {
   Facebook,
   Twitter,
   Instagram,
   Youtube,
   Linkedin,
-} from 'lucide-react'; // or use react-icons if preferred
+} from 'lucide-react'; 
 
 export default function SocialSection({ isLogoVisible }) {
   return (

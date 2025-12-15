@@ -115,7 +115,6 @@ export default function GroupBoardHeader({ onSearch, searchQuery }) {
         </div>
       </div>
 
-      {/* Mobile search under header */}
       <div className="sm:hidden border-t border-gray-200 px-4 pb-3 pt-2">
         <form onSubmit={handleSearchSubmit} className="w-full">
           <div

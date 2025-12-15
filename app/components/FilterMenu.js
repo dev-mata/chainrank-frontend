@@ -63,7 +63,6 @@ export default function FilterMenu() {
                 dropdown: (cat.subcategories || []).map((sub) => sub.name),
             }));
 
-            // Keep the same structure, last item is Browse All
             setMenuItems([
                 ...dynamicMenuItems,
                 { label: 'Browse All' },

@@ -8,7 +8,7 @@ export default function JoinGroupModal({
     showModal,
     setShowModal,
     group,
-    paymentMethodId, // <-- pass this in from user data later
+    paymentMethodId, 
 }) {
     // Start on QR / Address tab by default
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
@@ -130,7 +130,6 @@ export default function JoinGroupModal({
                 return;
             }
 
-            // success
             setIsSubmitted(true);
         } catch (error) {
             console.error(error);

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import logo from '../../public/logo.svg'; // Replace with your logo
+import logo from '../../public/logo.svg'; 
 
 export default function Footer() {
     const sections = [

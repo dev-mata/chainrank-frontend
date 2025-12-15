@@ -5,7 +5,7 @@ import Header from "./components/Header";
 import FilterMenu from "./components/FilterMenu";
 import SearchBar from "./components/SearchBar";
 import TrialCard from "./components/TrialCard";
-// (rest of imports below TrialCard can stay the same)
+
 import TallyStats from "./components/TallyStats";
 import LiveSubscriptions from "./components/LiveSubscriptions";
 import TrendingSlider from "./components/TrendingSlider";
@@ -58,7 +58,6 @@ export default function Home() {
         setFeaturedError(null);
       } catch (err) {
         console.error('Error fetching data:', err);
-        // You can customize these messages per error type if you like
         setError('Failed to fetch trending groups');
         setFeaturedError('Failed to load featured group');
       } finally {

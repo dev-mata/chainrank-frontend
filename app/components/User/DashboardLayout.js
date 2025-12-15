@@ -9,7 +9,6 @@ export default function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        // Replace with API calls
         setJoinedGroups([
             { id: 1, name: "React Devs", members: 150 },
             { id: 2, name: "Cycling Club", members: 45 },
