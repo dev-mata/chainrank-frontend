@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Wallet, Copy, CheckCircle } from "lucide-react";
+import CountrySelect from "./CountrySelect";
 
 export default function JoinGroupModal({
     showModal,
     setShowModal,
     group,
-    paymentMethodId, 
+    paymentMethodId,
 }) {
     // Start on QR / Address tab by default
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
@@ -24,6 +25,135 @@ export default function JoinGroupModal({
         cardExpiry: "",
         cardCvc: "",
     });
+
+    const [cardErrors, setCardErrors] = useState({
+        cardName: "",
+        cardNumber: "",
+        cardExpiry: "",
+        cardCvc: "",
+    })
+
+    const onlyDigits = (v) => (v || "").replace(/\D/g, "");
+
+    const detectBrand = (digits) => {
+        if (/^3[47]/.test(digits)) return "amex";
+        if (/^4/.test(digits)) return "visa";
+        if (/^(5[1-5]|2[2-7])/.test(digits)) return "mastercard";
+        if (/^(6011|65|64[4-9]|622)/.test(digits)) return "discover";
+        return "unknown";
+    };
+
+    const formatCardNumber = (raw) => {
+        const digits = onlyDigits(raw).slice(0, 19)
+        const brand = detectBrand(digits)
+
+        if (brand === "amex") {
+            const a = digits.slice(0, 4);
+            const b = digits.slice(4, 10);
+            const c = digits.slice(10, 15);
+            return [a, b, c].filter(Boolean).join(" ");
+        }
+
+        return digits.replace(/(.{4})/g, "$1 ").trim();
+    }
+
+    const formatExpiry = (raw) => {
+        const digits = onlyDigits(raw).slice(0, 4); // MMYY
+        if (digits.length <= 2) return digits;
+        return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    };
+
+    const luhnValid = (digits) => {
+        let sum = 0;
+        let shouldDouble = false;
+        for (let i = digits.length - 1; i >= 0; i--) {
+            let d = digits.charCodeAt(i) - 48;
+            if (d < 0 || d > 9) return false;
+            if (shouldDouble) {
+                d *= 2;
+                if (d > 9) d -= 9;
+            }
+            sum += d;
+            shouldDouble = !shouldDouble;
+        }
+        return sum % 10 === 0;
+    };
+
+    const parseExpiry = (value) => {
+        const v = (value || "").trim();
+        const m = v.match(/^(\d{2})\s*\/\s*(\d{2})$/); // MM/YY
+        if (!m) return null;
+        const month = Number(m[1]);
+        let year = Number(m[2]);
+        if (Number.isNaN(month) || Number.isNaN(year)) return null;
+        year += 2000;
+        return { month, year };
+    };
+
+    const validateCardLive = (fd) => {
+        const errors = { cardName: "", cardNumber: "", cardExpiry: "", cardCvc: "" };
+
+        // Name (only complain if user typed something)
+        const name = (fd.cardName || "").trim();
+        if (name.length > 0) {
+            if (name.length < 2) errors.cardName = "Name looks too short";
+            else if (/^\d+$/.test(name)) errors.cardName = "Name can’t be only numbers";
+        }
+
+        // Number (only complain after some progress; Luhn only when length is valid)
+        const digits = onlyDigits(fd.cardNumber);
+        const brand = detectBrand(digits);
+
+        const allowedLengths =
+            brand === "amex" ? [15] :
+                brand === "visa" ? [13, 16, 19] :
+                    brand === "mastercard" ? [16] :
+                        brand === "discover" ? [16, 19] :
+                            [16, 19]; // unknown: allow common lengths
+
+        if (digits.length > 0) {
+            // if user has typed enough, show "incomplete"
+            const minLen = Math.min(...allowedLengths);
+            if (digits.length >= 6 && digits.length < minLen) {
+                errors.cardNumber = "Card number is incomplete";
+            }
+            // only run Luhn when length matches a valid length
+            if (allowedLengths.includes(digits.length) && !luhnValid(digits)) {
+                errors.cardNumber = "Card number looks incorrect";
+            }
+        }
+
+        // Expiry (validate month as soon as it’s typed; past-date only when complete)
+        const expDigits = onlyDigits(fd.cardExpiry);
+        if (expDigits.length >= 2) {
+            const month = Number(expDigits.slice(0, 2));
+            if (month < 1 || month > 12) errors.cardExpiry = "Invalid month";
+        }
+        if ((fd.cardExpiry || "").length === 5) {
+            const parsed = parseExpiry(fd.cardExpiry);
+            if (!parsed) errors.cardExpiry = "Use MM/YY";
+            else {
+                const { month, year } = parsed;
+                const now = new Date();
+                const end = new Date(year, month, 0, 23, 59, 59);
+                if (end < now) errors.cardExpiry = "Card is expired";
+            }
+        }
+
+        // CVC (brand-aware; complain only after user starts typing)
+        const cvc = onlyDigits(fd.cardCvc).slice(0, 4);
+        const required = brand === "amex" ? 4 : 3;
+
+        if (cvc.length > 0) {
+            if (cvc.length > required) errors.cardCvc = `CVC must be ${required} digits`;
+            else if (cvc.length >= 2 && cvc.length < required) errors.cardCvc = "CVC is incomplete";
+        }
+
+        return errors;
+    };
+
+
+
     const [agree, setAgree] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [copiedField, setCopiedField] = useState(null);
@@ -58,7 +188,24 @@ export default function JoinGroupModal({
     };
 
     const handleChange = (e) => {
-        setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+
+        setFormData((prev) => {
+            let nextValue = value;
+
+            if (name === "cardNumber") nextValue = formatCardNumber(value);
+            if (name === "cardExpiry") nextValue = formatExpiry(value);
+            if (name === "cardCvc") nextValue = onlyDigits(value).slice(0, 4);
+
+            const next = { ...prev, [name]: nextValue };
+
+            // live validate only when on card tab
+            if (activeTab === "wallet") {
+                setCardErrors(validateCardLive(next));
+            }
+
+            return next;
+        });
     };
 
     const isFormValid = () => {
@@ -237,13 +384,13 @@ export default function JoinGroupModal({
                                             className="w-full p-2 text-sm border border-gray-300 bg-gray-50 font-rhm focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-300"
                                             required
                                         />
-                                        <input
-                                            name="country"
-                                            onChange={handleChange}
+
+
+                                        <CountrySelect
                                             value={formData.country}
-                                            placeholder="Country"
-                                            className="w-full p-2 text-sm border border-gray-300 bg-gray-50 font-rhm focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-300"
+                                            onChange={(code) => setFormData((p) => ({ ...p, country: code }))}
                                             required
+                                            className=""
                                         />
                                         <input
                                             name="address1"
@@ -317,9 +464,15 @@ export default function JoinGroupModal({
                                                 value={formData.cardNumber}
                                                 placeholder="Card Number"
                                                 inputMode="numeric"
-                                                className="w-full p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
-                                                required={activeTab === "wallet"}
+                                                maxLength={23}
+                                                aria-invalid={!!cardErrors.cardNumber}
+                                                className="w-full p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300 "
                                             />
+                                            {cardErrors.cardNumber && (
+                                                <p className="mt-1 text-[11px] text-red-500">{cardErrors.cardNumber}</p>
+                                            )}
+
+
                                             <div className="flex gap-2">
                                                 <input
                                                     name="cardExpiry"
@@ -329,6 +482,10 @@ export default function JoinGroupModal({
                                                     className="w-1/2 p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
                                                     required={activeTab === "wallet"}
                                                 />
+
+                                                {cardErrors.cardExpiry && (
+                                                    <p className="mt-1 text-[11px] text-red-500">{cardErrors.cardExpiry}</p>
+                                                )}
                                                 <input
                                                     name="cardCvc"
                                                     onChange={handleChange}
@@ -338,6 +495,9 @@ export default function JoinGroupModal({
                                                     className="w-1/2 p-2 text-xs md:text-sm border border-gray-300 bg-white font-rhm focus:outline-none focus:ring-1 focus:ring-rose-300"
                                                     required={activeTab === "wallet"}
                                                 />
+                                                {cardErrors.cardCvc && (
+                                                    <p className="mt-1 text-[11px] text-red-500">{cardErrors.cardCvc}</p>
+                                                )}
                                             </div>
 
                                             <p className="mt-1 text-[10px] text-gray-500">
