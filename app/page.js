@@ -63,7 +63,7 @@ export default function Home() {
       } finally {
         setLoading(false);
 
-        
+
         setFeaturedLoading(false);
       }
     };

@@ -1,9 +1,11 @@
 'use client';
 
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { X, Star, MessageCircle, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import JoinGroupModal from '@/app/components/JoinGroupModal';
+import FullScreenLoader from '@/app/components/FullScreenLoader';
+import AuthRequiredModal from '@/app/components/Auth/AuthRequiredModal';
 
 export default function GroupPage() {
     const router = useRouter();
@@ -11,10 +13,13 @@ export default function GroupPage() {
     const searchParams = useSearchParams();
 
     const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL; // e.g. http://localhost:5000
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     const [showModal, setShowModal] = useState(false);
+
     const [group, setGroup] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showLoader, setShowLoader] = useState(true)
     const [error, setError] = useState(null);
 
 
@@ -25,11 +30,11 @@ export default function GroupPage() {
 
     const fallback = {
         banner: '/trialgroup.png',
-        members: '225',
+        members: '0',
         about:
-            'Top-tier crypto signals group sharing real-time trade alerts, PnL screenshots, and weekly performance reports.',
+            'Information of the group will show here.',
         features: [
-            'Private  Access to Exclusive Information',
+            'Features of the group will show here',
 
         ],
         reviews: [
@@ -54,22 +59,24 @@ export default function GroupPage() {
     // ------------------------------------------------------------------
     useEffect(() => {
         if (!id) {
-            setError('Missing group id in URL');
+            setError("Missing group id in URL");
             setLoading(false);
             return;
         }
 
         if (!apiBase) {
-            setError('API base URL is not configured');
+            setError("API base URL is not configured");
             setLoading(false);
             return;
         }
 
         const controller = new AbortController();
+        let hideTimer;
 
         async function fetchGroup() {
             try {
                 setLoading(true);
+                setShowLoader(true);
                 setError(null);
 
                 const res = await fetch(`${apiBase}/api/public/public-groups/${id}`, {
@@ -83,25 +90,31 @@ export default function GroupPage() {
                 const json = await res.json();
 
                 if (!json.success || !json.data) {
-                    throw new Error('Invalid response from server');
+                    throw new Error("Invalid response from server");
                 }
 
                 setGroup(json.data);
             } catch (err) {
-                if (err.name !== 'AbortError') {
+                if (err.name !== "AbortError") {
                     console.error(err);
-                    setError(err.message || 'Failed to load group');
+                    setError(err.message || "Failed to load group");
                 }
             } finally {
                 setLoading(false);
+
+                // keep loader visible for an extra 0.5s
+                hideTimer = setTimeout(() => setShowLoader(false), 500);
             }
         }
 
         fetchGroup();
 
-
-        return () => controller.abort();
+        return () => {
+            controller.abort();
+            if (hideTimer) clearTimeout(hideTimer);
+        };
     }, [id, apiBase]);
+
 
 
     const effectiveName = group?.groupName || prettySlug || 'Unknown group';
@@ -143,6 +156,19 @@ export default function GroupPage() {
     })();
 
 
+    const handleJoinClick = () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+
+        if (!token) {
+            setShowAuthModal(true)
+            return;
+        }
+
+        setShowModal(true)
+    }
+
+
+
     const CTACard = ({ price, period, ratingStars }) => (
         <div className="bg-rose-50 border border-gray-200 shadow-[5px_5px_0px_rgba(0,0,0,1)] p-4 mb-4 md:mb-6 md:sticky md:top-20 relative">
             <p className="text-xs uppercase tracking-wide text-gray-600 mb-1 font-rhm">
@@ -169,11 +195,17 @@ export default function GroupPage() {
             </p>
 
             <button
-                onClick={() => setShowModal(true)}
+                onClick={handleJoinClick}
                 className="absolute border border-1 font-rhm -bottom-4 right-3 bg-rose-300 text-black font-semibold text-sm px-4 py-2 shadow-[5px_5px_0px_rgba(0,0,0,1)]"
             >
                 Join Group
             </button>
+
+            <AuthRequiredModal
+                open={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                redirectTo="/login"
+            />
 
             <JoinGroupModal showModal={showModal} setShowModal={setShowModal} group={group} />
         </div>
@@ -181,12 +213,8 @@ export default function GroupPage() {
     // ------------------------------------------------------------------
     // Page Layout
     // ------------------------------------------------------------------
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
-            </div>
-        );
+    if (showLoader) {
+        return <FullScreenLoader label="Loading group..." />;
     }
 
     if (error) {
