@@ -1,11 +1,13 @@
 'use client';
 
-import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { X, Star, MessageCircle, CheckCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import JoinGroupModal from '@/app/components/JoinGroupModal';
 import FullScreenLoader from '@/app/components/FullScreenLoader';
 import AuthRequiredModal from '@/app/components/Auth/AuthRequiredModal';
+import ReviewCard from '@/app/components/Reviews/ReviewCard';
+import AddReviewModal from '@/app/components/Reviews/AddReviewModal';
 
 export default function GroupPage() {
     const router = useRouter();
@@ -19,24 +21,18 @@ export default function GroupPage() {
 
     const [group, setGroup] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showLoader, setShowLoader] = useState(true)
+    const [showLoader, setShowLoader] = useState(true);
     const [error, setError] = useState(null);
 
-
     const id = searchParams.get('id');
-
     const nameFromUrl = searchParams.get('name');
     const bannerUrlFromUrl = searchParams.get('bannerUrl');
 
     const fallback = {
         banner: '/trialgroup.png',
         members: '0',
-        about:
-            'Information of the group will show here.',
-        features: [
-            'Features of the group will show here',
-
-        ],
+        about: 'Information of the group will show here.',
+        features: ['Features of the group will show here'],
         reviews: [
             {
                 user: 'Reviews will show here...',
@@ -59,13 +55,13 @@ export default function GroupPage() {
     // ------------------------------------------------------------------
     useEffect(() => {
         if (!id) {
-            setError("Missing group id in URL");
+            setError('Missing group id in URL');
             setLoading(false);
             return;
         }
 
         if (!apiBase) {
-            setError("API base URL is not configured");
+            setError('API base URL is not configured');
             setLoading(false);
             return;
         }
@@ -90,19 +86,17 @@ export default function GroupPage() {
                 const json = await res.json();
 
                 if (!json.success || !json.data) {
-                    throw new Error("Invalid response from server");
+                    throw new Error('Invalid response from server');
                 }
 
                 setGroup(json.data);
             } catch (err) {
-                if (err.name !== "AbortError") {
+                if (err.name !== 'AbortError') {
                     console.error(err);
-                    setError(err.message || "Failed to load group");
+                    setError(err.message || 'Failed to load group');
                 }
             } finally {
                 setLoading(false);
-
-                // keep loader visible for an extra 0.5s
                 hideTimer = setTimeout(() => setShowLoader(false), 500);
             }
         }
@@ -115,9 +109,7 @@ export default function GroupPage() {
         };
     }, [id, apiBase]);
 
-
-
-    const effectiveName = group?.groupName || prettySlug || 'Unknown group';
+    const effectiveName = group?.groupName || nameFromUrl || prettySlug || 'Unknown group';
     const effectiveDescription = group?.description || fallback.about;
     const effectiveMembers =
         group?.membersCount ??
@@ -141,34 +133,126 @@ export default function GroupPage() {
         const raw = fromApi || bannerUrlFromUrl;
 
         if (!raw) return fallback.banner;
-
         if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-
         return apiBase ? `${apiBase}${raw}` : raw;
     })();
 
     const logoSrc = (() => {
         const raw = group?.logoUrl;
         if (!raw) return '/placeholder-avatar.png';
-
         if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
         return apiBase ? `${apiBase}${raw}` : raw;
     })();
 
-
     const handleJoinClick = () => {
-        const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
         if (!token) {
-            setShowAuthModal(true)
+            setShowAuthModal(true);
             return;
         }
 
-        setShowModal(true)
-    }
+        setShowModal(true);
+    };
 
+    // ------------------------------------------------------------------
+    // ⭐ REVIEWS (Merged ReviewsPanel logic)
+    // ------------------------------------------------------------------
 
+    // IMPORTANT: This groupKey must match your backend resolver.
+    // If backend expects Mongo group _id => use id
+    // If backend expects slug => use slug
+    const groupKey = id;
 
+    const [isAddOpen, setIsAddOpen] = useState(false);
+
+    const [reviewsLoading, setReviewsLoading] = useState(true);
+    const [reviewsError, setReviewsError] = useState('');
+    const [reviewsSubmitting, setReviewsSubmitting] = useState(false);
+
+    const [reviews, setReviews] = useState([]); // real backend reviews
+    const [reviewsTotal, setReviewsTotal] = useState(0);
+    const [avgRating, setAvgRating] = useState(0);
+
+    const canFetchReviews = useMemo(() => Boolean(apiBase && groupKey), [apiBase, groupKey]);
+
+    const fetchReviews = async () => {
+        if (!canFetchReviews) return;
+
+        try {
+            setReviewsError('');
+            setReviewsLoading(true);
+
+            const res = await fetch(
+                `${apiBase}/api/reviews/group/${groupKey}?page=1&limit=10&sort=latest`,
+                { cache: 'no-store' }
+            );
+
+            const json = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(json?.message || `Failed to load reviews (status ${res.status})`);
+            }
+
+            setReviews(Array.isArray(json.items) ? json.items : []);
+            setReviewsTotal(json.total ?? 0);
+            setAvgRating(json.avgRating ?? 0);
+        } catch (e) {
+            setReviewsError(e.message || 'Failed to load reviews');
+            // fallback UI: show placeholder if no backend data
+            setReviews(fallback.reviews || []);
+            setReviewsTotal(0);
+            setAvgRating(0);
+        } finally {
+            setReviewsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReviews();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canFetchReviews]);
+
+    const handleAddReview = async ({ rating, message, user }) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+        if (!token) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        try {
+            setReviewsSubmitting(true);
+            setReviewsError('');
+
+            const res = await fetch(`${apiBase}/api/reviews/group/${groupKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ rating, message }),
+            });
+
+            const json = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(json?.message || `Failed to submit review (status ${res.status})`);
+            }
+
+            // reload list (safe + keeps masked email + groupName consistent)
+            await fetchReviews();
+            setIsAddOpen(false);
+        } catch (e) {
+            setReviewsError(e.message || 'Failed to submit review');
+        } finally {
+            setReviewsSubmitting(false);
+        }
+    };
+
+    // ------------------------------------------------------------------
+    // CTA Card
+    // ------------------------------------------------------------------
     const CTACard = ({ price, period, ratingStars }) => (
         <div className="bg-rose-50 border border-gray-200 shadow-[5px_5px_0px_rgba(0,0,0,1)] p-4 mb-4 md:mb-6 md:sticky md:top-20 relative">
             <p className="text-xs uppercase tracking-wide text-gray-600 mb-1 font-rhm">
@@ -178,9 +262,7 @@ export default function GroupPage() {
             <div className="flex items-baseline justify-between mb-2">
                 <span className="text-xl font-bold text-black font-rhm">
                     ${price}{' '}
-                    <span className="text-xs font-normal text-gray-600">
-                        / {period}
-                    </span>
+                    <span className="text-xs font-normal text-gray-600">/ {period}</span>
                 </span>
 
                 <div className="flex text-rose-500">
@@ -201,15 +283,12 @@ export default function GroupPage() {
                 Join Group
             </button>
 
-            <AuthRequiredModal
-                open={showAuthModal}
-                onClose={() => setShowAuthModal(false)}
-                redirectTo="/login"
-            />
+            <AuthRequiredModal open={showAuthModal} onClose={() => setShowAuthModal(false)} redirectTo="/login" />
 
             <JoinGroupModal showModal={showModal} setShowModal={setShowModal} group={group} />
         </div>
     );
+
     // ------------------------------------------------------------------
     // Page Layout
     // ------------------------------------------------------------------
@@ -235,9 +314,7 @@ export default function GroupPage() {
         <div className="min-h-screen bg-white text-gray-900">
             {/* Header */}
             <div className="flex justify-between items-center px-6 py-4 border-b">
-                <h1 className="text-xl font-bold text-rose-500 capitalize">
-                    {effectiveName}
-                </h1>
+                <h1 className="text-xl font-bold text-rose-500 capitalize">{effectiveName}</h1>
                 <button
                     onClick={() => router.back()}
                     className="text-gray-600 hover:text-black flex items-center gap-1"
@@ -259,11 +336,7 @@ export default function GroupPage() {
 
                 {/* Mobile CTA */}
                 <div className="md:hidden mb-6">
-                    <CTACard
-                        price={effectivePrice}
-                        period={effectivePeriod}
-                        ratingStars={effectiveRatingStars}
-                    />
+                    <CTACard price={effectivePrice} period={effectivePeriod} ratingStars={effectiveRatingStars} />
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8">
@@ -276,9 +349,7 @@ export default function GroupPage() {
                                     alt={effectiveName}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
-                                <h3 className="text-2xl md:text-3xl font-bold text-rose-500">
-                                    {effectiveName}
-                                </h3>
+                                <h3 className="text-2xl md:text-3xl font-bold text-rose-500">{effectiveName}</h3>
                             </div>
 
                             <div className="flex gap-2 mt-1 text-gray-600 items-center">
@@ -292,18 +363,14 @@ export default function GroupPage() {
                         </div>
 
                         {/* About */}
-                        <h4 className="text-lg md:text-xl font-semibold mb-3 text-black">
-                            About
-                        </h4>
+                        <h4 className="text-lg md:text-xl font-semibold mb-3 text-black">About</h4>
 
                         <p className="text-sm md:text-base text-gray-700 mb-6 font-rhm leading-relaxed">
                             {effectiveDescription}
                         </p>
 
                         {/* Features */}
-                        <h4 className="text-lg md:text-xl font-semibold mb-3 text-black mt-4">
-                            Features
-                        </h4>
+                        <h4 className="text-lg md:text-xl font-semibold mb-3 text-black mt-4">Features</h4>
                         <ul className="space-y-2 mb-4">
                             {featuresToShow.map((feature, i) => (
                                 <li
@@ -320,35 +387,46 @@ export default function GroupPage() {
                     {/* RIGHT SIDE */}
                     <div className="w-full md:w-80 lg:w-96 md:pt-1">
                         <div className="hidden md:block">
-                            <CTACard
-                                price={effectivePrice}
-                                period={effectivePeriod}
-                                ratingStars={effectiveRatingStars}
-                            />
+                            <CTACard price={effectivePrice} period={effectivePeriod} ratingStars={effectiveRatingStars} />
                         </div>
 
                         {/* Reviews */}
-                        <h4 className="text-lg md:text-xl font-semibold mb-3 text-black">
-                            Reviews
-                        </h4>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-lg md:text-xl font-semibold text-black">Reviews</h4>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddOpen(true)}
+                                className="px-3 py-1 text-xs font-rhm text-white bg-black hover:bg-gray-900 transition"
+                            >
+                                Add Review
+                            </button>
+                        </div>
 
-                        {fallback.reviews.map((review, i) => (
-                            <div key={i} className="bg-rose-100 p-4 border border-rose-200 mb-3">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="font-semibold text-black text-sm md:text-base">
-                                        {review.user}
-                                    </span>
-                                    <div className="flex items-center gap-1 text-yellow-500">
-                                        <Star size={14} fill="currentColor" stroke="currentColor" />
-                                        <span className="text-sm font-bold">{review.rating}</span>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-600 font-rhm">{review.time}</p>
-                                <p className="mt-1 text-sm text-gray-800 font-rhm">
-                                    {review.message}
-                                </p>
+                        <p className="text-xs text-gray-600 font-rhm mb-3">
+                            {reviewsTotal ? `${reviewsTotal} reviews • ` : ''}
+                            {avgRating ? `${avgRating}/5 avg` : ''}
+                        </p>
+
+                        {reviewsError && (
+                            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                                {reviewsError}
                             </div>
-                        ))}
+                        )}
+
+                        {reviewsLoading ? (
+                            <div className="text-sm text-gray-600 font-rhm">Loading reviews…</div>
+                        ) : (
+                            reviews.map((review, i) => (
+                                <ReviewCard key={review.id || review._id || i} review={review} />
+                            ))
+                        )}
+
+                        <AddReviewModal
+                            open={isAddOpen}
+                            onClose={() => setIsAddOpen(false)}
+                            onSubmit={handleAddReview}
+                            submitting={reviewsSubmitting} // safe even if modal ignores it
+                        />
                     </div>
                 </div>
             </div>
