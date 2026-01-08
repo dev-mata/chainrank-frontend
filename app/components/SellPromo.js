@@ -10,9 +10,9 @@ export default function SellPromo() {
 
       {/* Buttons */}
       <div className="flex flex-wrap gap-4 font-rhm">
-        <button className="bg-indigo-200 text-black text-md font-bold px-4 py-2 shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] transition duration-150">
+        <a href="/group-login" className="bg-indigo-200 text-black text-md font-bold px-4 py-2 shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] transition duration-150">
           Start selling
-        </button>
+        </a>
         <button className="border border-white text-white font-bold px-4 py-2 hover:bg-white hover:text-red-600 transition duration-150">
           Learn more
         </button>
