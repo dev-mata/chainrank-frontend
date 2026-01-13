@@ -87,7 +87,7 @@ export default function FullDashboard() {
       <GroupOverview profile={profile} />
       <SubscriptionPaymentSettings profile={profile} />
 
-      <PerformanceMetrics profile={profile} />
+      {/* <PerformanceMetrics profile={profile} /> */}
       <SubscriberTable profile={profile} />
       <AnalyticsCharts profile={profile} />
       <ReviewsSection profile={profile} />

@@ -9,16 +9,15 @@ export default function PerformanceMetrics() {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {metrics.map((metric) => (
-        <div
-          key={metric.label}
-          className="bg-white p-4 border border-1 border-gray-200 text-center"
-        >
-          <p className="text-sm text-gray-500 font-rhm">{metric.label}</p>
-          <p className="text-xl font-bold text-black mt-1">{metric.value}</p>
-        </div>
-      ))}
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="grid grid-cols-2 gap-3">
+        {metrics.map((m) => (
+          <div key={m.label} className="border border-gray-200 p-3 text-center rounded-md">
+            <p className="text-xs text-gray-500 font-rhm">{m.label}</p>
+            <p className="text-lg font-bold text-gray-900 mt-1">{m.value}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
